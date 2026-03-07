@@ -1,0 +1,269 @@
+/* 1. SURGICALLY HIDE NATIVE EXCALIDRAW TOOLBARS (Desktop & Mobile) */
+.excalidraw .App-menu_top,
+.excalidraw .App-menu_bottom,
+.excalidraw .App-bottom-bar,
+.excalidraw .layer-ui__wrapper__top-right,
+.excalidraw .layer-ui__wrapper__footer,
+.excalidraw .FixedSideContainer,
+.excalidraw .hint-viewer,
+.excalidraw .mobile-misc-tools-container {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* 2. DYNAMIC CUSTOM TOOLBAR STYLES */
+.custom-toolbar {
+  background: #232329;
+  /* clamp(MIN, IDEAL, MAX) */
+  padding: clamp(8px, 2vw, 18px);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.5vw, 14px);
+  width: clamp(240px, 35vw, 420px); /* Stops growing exactly at "Palm Size" */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  font-family: sans-serif;
+  color: white;
+  border: 1px solid #444;
+}
+
+/* Scrollable Rows */
+.toolbar-row {
+  display: flex;
+  gap: clamp(6px, 1vw, 10px);
+  overflow-x: auto;
+  padding-bottom: 8px; /* Room for scrollbar */
+  scroll-behavior: smooth;
+}
+
+.toolbar-row::-webkit-scrollbar { height: 6px; }
+.toolbar-row::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+.toolbar-row::-webkit-scrollbar-track { background: transparent; }
+
+/* Color Swatches */
+.color-swatch {
+  width: clamp(25px, 4vw, 45px);
+  height: clamp(25px, 4vw, 45px);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.color-swatch.active { border-color: #ffffff; }
+
+.color-picker-input {
+  width: clamp(25px, 4vw, 45px);
+  height: clamp(25px, 4vw, 45px);
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: none;
+}
+.color-picker-input::-webkit-color-swatch-wrapper { padding: 0; }
+.color-picker-input::-webkit-color-swatch {
+  border: 1px solid #777;
+  border-radius: 8px;
+}
+
+/* Tool Buttons */
+.tool-btn, .option-btn {
+  flex: 1;
+  flex-shrink: 0;
+  min-width: clamp(35px, 5vw, 55px);
+  height: clamp(35px, 5vw, 55px);
+  background: #1e1e1e;
+  border: 1px solid #555;
+  color: white;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: clamp(16px, 2.5vw, 24px); /* Icons scale up smoothly */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.option-btn { height: clamp(28px, 4vw, 40px); } 
+
+.tool-btn.active, .option-btn.active {
+  background: #3b82f6; 
+  border-color: #60a5fa;
+}
+
+/* Sliders */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.slider-container label {
+  font-size: clamp(10px, 1.5vw, 14px);
+  width: 50px;
+  color: #ccc;
+}
+.slider-container input[type="range"] {
+  flex: 1;
+  cursor: pointer;
+}
+
+/* --- FLOATING ACTION BUTTON & HEADER STYLES --- */
+.collapsed-circle {
+  width: clamp(40px, 5vw, 55px);
+  height: clamp(40px, 5vw, 55px);
+  border-radius: 50%;
+  background: rgba(35, 35, 41, 0.25);
+  backdrop-filter: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(18px, 2.5vw, 24px);
+  color: white;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.collapsed-circle:hover {
+  background: rgba(35, 35, 41, 0.8);
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.draw-toolbar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1a1a1f;
+  padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 15px);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border: 1px solid #444;
+  border-bottom: none;
+}
+
+.draw-drag-handle {
+  cursor: grab;
+  color: #94a3b8;
+  font-weight: bold;
+  font-size: clamp(12px, 1.8vw, 16px);
+  flex: 1;
+}
+
+.pin-btn {
+  background: transparent;
+  border: 1px solid #555;
+  color: #ccc;
+  padding: clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 12px);
+  border-radius: 6px;
+  font-size: clamp(10px, 1.5vw, 14px);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pin-btn.active { background: #3b82f6; color: white; border-color: #60a5fa; }
+
+/* --- MOONS & GHOSTING STYLES --- */
+.moon-circle {
+  width: clamp(35px, 4vw, 45px) !important;
+  height: clamp(35px, 4vw, 45px) !important;
+  border-radius: 50%;
+  background: rgba(35, 35, 41, 0.9);
+  border: 1px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(14px, 2vw, 18px) !important;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  transition: transform 0.2s, background 0.2s, opacity 0.2s;
+  opacity: 0.6;
+}
+.moon-circle:hover { background: rgba(59, 130, 246, 0.9); transform: scale(1.15); opacity: 1; }
+.moon-danger:hover { background: #ef4444 !important; }
+
+.ui-faded { opacity: 0.4 !important; transition: opacity 0.5s ease-out; }
+.ui-awake { opacity: 1 !important; transition: opacity 0.2s ease-in; }
+.collision-faded { opacity: 0.15 !important; transition: opacity 0.2s ease-out; }
+
+/* --- ADD & EXPORT MENUS --- */
+.action-btn-group {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  gap: clamp(8px, 1.5vw, 12px);
+}
+
+.action-btn {
+  padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px) !important;
+  border-radius: 10px;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: transform 0.2s, background 0.2s, opacity 0.5s;
+  font-size: clamp(12px, 2vw, 16px) !important;
+}
+.action-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+.add-btn { background: #3b82f6; }
+.add-btn:hover { background: #2563eb; }
+.export-btn { background: #10b981; }
+.export-btn:hover { background: #059669; }
+
+.popover-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: clamp(160px, 30vw, 220px);
+  border: 1px solid #e2e8f0;
+  transform-origin: bottom right;
+  animation: popoverIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes popoverIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.popover-item {
+  padding: clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 14px);
+  border: none;
+  background: transparent;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(12px, 1.8vw, 16px);
+}
+.popover-item:hover { background: #f1f5f9; color: #0f172a; }
+
+/* =========================================================
+   📱 EXTREME MOBILE OVERRIDES (For screens smaller than 768px)
+   ========================================================= */
+@media (max-width: 768px) {
+  /* Squish the grid heavily so it stacks cleanly on phones */
+  .dashboard-grid { grid-template-columns: 1fr !important; }
+  
+  /* Make all popups take almost the full screen */
+  .responsive-modal { width: 95% !important; padding: 20px !important; }
+  
+  /* Make sure Action buttons don't fly off screen */
+  .action-btn-group { bottom: 10px; right: 10px; flex-direction: column; gap: 8px; }
+  
+  .popover-menu { width: 150px; right: 0; }
+}
