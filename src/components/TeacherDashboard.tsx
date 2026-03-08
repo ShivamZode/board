@@ -39,16 +39,16 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
   }, []);
 
   useEffect(() => {
-    if (formData.branchId && formData.yearId) {
-      setFilteredSubjects(allSubjects.filter(sub => sub.branch_id.toString() === formData.branchId && sub.academic_year_id.toString() === formData.yearId));
+    if (formData?.branchId && formData?.yearId) {
+      setFilteredSubjects(allSubjects.filter(sub => sub.branch_id.toString() === formData?.branchId && sub.academic_year_id.toString() === formData.yearId));
     } else {
       setFilteredSubjects([]); 
     }
-  }, [formData.branchId, formData.yearId, allSubjects]);
+  }, [formData?.branchId, formData?.yearId, allSubjects]);
 
   const handleStart = (e: React.SyntheticEvent) => {
     e.preventDefault();
-    const branchName = branches.find(b => b.id.toString() === formData.branchId)?.name || 'Unknown';
+    const branchName = branches.find(b => b.id.toString() === formData?.branchId)?.name || 'Unknown';
     const subjectName = allSubjects.find(s => s.id.toString() === formData.subjectId)?.name || 'Unknown';
     onStartClass({ ...formData, branch: branchName, subject: subjectName, notifyType });
     setShowModal(false);
@@ -86,7 +86,7 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
       
       if (data.boardData) {
         onStartClass({
-          branchId: cls.branchId, yearId: cls.yearId, divId: cls.divId, subject: cls.subject, branch: cls.branch, 
+          branchId: cls?.branchId, yearId: cls?.yearId, divId: cls?.divId, subject: cls?.subject, branch: cls?.branch, 
           resumeData: JSON.parse(data.boardData) 
         });
         setShowHistoryModal(false);
