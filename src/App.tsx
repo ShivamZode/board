@@ -189,6 +189,7 @@ export default function App() {
   const isDrawingRef = useRef(false);
   const latestElementsRef = useRef<readonly any[]>([]);
   const lastCameraSyncRef = useRef<number>(0);
+  const lastCamStateRef = useRef<string>("");
 
   const socketRef = useRef<WebSocket | null>(null)
   const isStudentRef = useRef(isStudent)
@@ -769,23 +770,32 @@ export default function App() {
     // 1. Always save the latest drawing data quietly in the background
     latestElementsRef.current = elements;
 
-    // 2. THROTTLE CAMERA: Only send panning/zooming data once every 30 milliseconds
-    const now = Date.now();
-    if (now - lastCameraSyncRef.current > 30) {
-      lastCameraSyncRef.current = now;
-      socketRef.current.send(JSON.stringify({ 
-        type: 'camera_sync', 
-        camera: { 
-          scrollX: appState.scrollX, 
-          scrollY: appState.scrollY, 
-          zoom: appState.zoom.value,
-          width: appState.width || window.innerWidth,
-          height: appState.height || window.innerHeight
-        } 
-      }));
+    // 2. CHECK CAMERA MOVEMENT: Only sync if they actually panned/zoomed!
+    // We use .toFixed(1) to ignore microscopic floating-point pixel jitters
+    const newCamState = `${appState.scrollX.toFixed(1)}|${appState.scrollY.toFixed(1)}|${appState.zoom.value}`;
+
+    if (newCamState !== lastCamStateRef.current) {
+      const now = Date.now();
+      
+      // Throttle to 100ms (10fps is super smooth for panning and saves the server)
+      if (now - lastCameraSyncRef.current > 100) {
+        lastCameraSyncRef.current = now;
+        lastCamStateRef.current = newCamState;
+
+        socketRef.current.send(JSON.stringify({ 
+          type: 'camera_sync', 
+          camera: { 
+            scrollX: appState.scrollX, 
+            scrollY: appState.scrollY, 
+            zoom: appState.zoom.value,
+            width: appState.width || window.innerWidth,
+            height: appState.height || window.innerHeight
+          } 
+        }));
+      }
     }
 
-    // 3. If they are NOT actively drawing (like panning or typing text), sync normally
+    // 3. Only flush drawing data if the pen is up
     if (!isDrawingRef.current) {
       flushElements();
     }
