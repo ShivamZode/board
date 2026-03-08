@@ -186,6 +186,10 @@ export default function App() {
   const topTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bottomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const isDrawingRef = useRef(false);
+  const latestElementsRef = useRef<readonly any[]>([]);
+  const lastCameraSyncRef = useRef<number>(0);
+
   const socketRef = useRef<WebSocket | null>(null)
   const isStudentRef = useRef(isStudent)
   const isFollowingRef = useRef(isFollowing)
