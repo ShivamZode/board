@@ -280,7 +280,7 @@ export default function App() {
     if (isStudent || currentView !== 'board' || !roomId || isViewingPast) return;
 
     const interval = setInterval(() => {
-      fetch('${import.meta.env.VITE_BACKEND_URL}/api/attendance/live/', {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/live/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId })
@@ -302,7 +302,7 @@ export default function App() {
         const files = excalidrawAPI.getFiles();
         const boardData = JSON.stringify({ elements, files });
 
-        await fetch('${import.meta.env.VITE_BACKEND_URL}/api/end-class/', {
+        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/end-class/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomId, boardData })
@@ -330,7 +330,7 @@ export default function App() {
   const handleLogout = async () => {
     if (!isStudent && roomId) {
       try {
-        await fetch('${import.meta.env.VITE_BACKEND_URL}/api/end-class/', {
+        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/end-class/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomId })
@@ -359,7 +359,7 @@ export default function App() {
     const newRoomId = `room_${classDetails.branch.replace(/\s+/g, '')}_${Date.now()}`;
     
     try {
-      await fetch('${import.meta.env.VITE_BACKEND_URL}/api/start-class/', {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/start-class/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -597,7 +597,7 @@ export default function App() {
     if (isStudent && currentView === 'board' && roomId && !isViewingPast) {
       
       const joinTimer = setTimeout(() => {
-        fetch('${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/', {
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'join', roomId, email: currentUserEmail, name: userFullName })
@@ -607,7 +607,7 @@ export default function App() {
       return () => {
         clearTimeout(joinTimer);
         
-        fetch('${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/', {
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           keepalive: true,
@@ -776,7 +776,7 @@ export default function App() {
     formData.append('end_page', pdfEnd.toString());
 
     try {
-      const response = await fetch('${import.meta.env.VITE_BACKEND_URL}/api/upload-pdf/', { method: 'POST', body: formData })
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload-pdf/`, { method: 'POST', body: formData })
       const data = await response.json()
       
       if (data.image_urls) {
