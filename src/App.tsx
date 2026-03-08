@@ -365,11 +365,11 @@ export default function App() {
         body: JSON.stringify({
           roomId: newRoomId,
           teacherName: userFullName, 
-          subjectName: classDetails.subject,
-          branchId: classDetails.branchId,
-          yearId: classDetails.yearId,
-          divId: classDetails.divId,
-          notifyType: classDetails.notifyType, 
+          subjectName: classDetails?.subject || "",
+          branchId: classDetails?.branchId || null,
+          yearId: classDetails?.yearId || null,
+          divId: classDetails?.divId || null,
+          notifyType: classDetails?.notifyType || "direct", 
         })
       });
       setIsQRMode(classDetails.notifyType === 'qr');
