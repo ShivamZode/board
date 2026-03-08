@@ -21,7 +21,7 @@ export default function StudentDashboard({ onJoinClass, onLogout, studentInfo, o
     if (!studentInfo) return;
 
     const interval = setInterval(() => {
-      fetch('${import.meta.env.VITE_BACKEND_URL}/api/check-class/', {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/check-class/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(studentInfo)
@@ -47,7 +47,7 @@ export default function StudentDashboard({ onJoinClass, onLogout, studentInfo, o
   }, [studentInfo]);
 
   const loadHistory = () => {
-    fetch('${import.meta.env.VITE_BACKEND_URL}/api/previous-classes/', {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/previous-classes/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: 'student', branchId: studentInfo.branchId, yearId: studentInfo.yearId, divId: studentInfo.divId })
@@ -61,7 +61,7 @@ export default function StudentDashboard({ onJoinClass, onLogout, studentInfo, o
   };
 
   const loadAttendanceStats = () => {
-    fetch('${import.meta.env.VITE_BACKEND_URL}/api/student/attendance-stats/', {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/student/attendance-stats/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: studentEmail, branchId: studentInfo.branchId, yearId: studentInfo.yearId, divId: studentInfo.divId })
