@@ -458,7 +458,11 @@ export default function App() {
   }, [wakeTopMenu, wakeBottomUI]);
 
   useEffect(() => {
-    const stopDrawing = () => setIsDrawingOnCanvas(false);
+    const stopDrawing = () => {
+      setIsDrawingOnCanvas(false);
+      isDrawingRef.current = false; // 🌟 Mark pen as lifted
+      flushElements(); // 🌟 BAM! Send the entire completed stroke instantly!
+    };
     window.addEventListener('pointerup', stopDrawing);
 
     const detectCollision = (e: PointerEvent) => {
@@ -732,9 +736,11 @@ export default function App() {
     return () => ws.close()
   }, [excalidrawAPI, isAuthenticated, showToast]) 
 
-  const handleExcalidrawChange = useCallback((elements: readonly any[], appState: any) => {
-    if (isStudentRef.current || socketRef.current?.readyState !== WebSocket.OPEN) return;
-    
+  //Create the "Flush" Function
+  const flushElements = useCallback(() => {
+    if (isStudentRef.current || socketRef.current?.readyState !== WebSocket.OPEN || !excalidrawAPI) return;
+
+    const elements = latestElementsRef.current;
     const elementsString = JSON.stringify(elements);
     const currentFiles = excalidrawAPI.getFiles();
     const newFilesToSend: any = {};
@@ -754,18 +760,36 @@ export default function App() {
         drawing_data: elements, files: hasNewFiles ? newFilesToSend : {}, pageId: activeSlideIdRef.current, clientId: clientIdRef.current 
       }));
     }
-
-    socketRef.current.send(JSON.stringify({ 
-      type: 'camera_sync', 
-      camera: { 
-        scrollX: appState.scrollX, 
-        scrollY: appState.scrollY, 
-        zoom: appState.zoom.value,
-        width: appState.width || window.innerWidth,
-        height: appState.height || window.innerHeight
-      } 
-    }));
   }, [excalidrawAPI]);
+
+  //chnaged the handleExcalidrawChange
+  const handleExcalidrawChange = useCallback((elements: readonly any[], appState: any) => {
+    if (isStudentRef.current || socketRef.current?.readyState !== WebSocket.OPEN) return;
+
+    // 1. Always save the latest drawing data quietly in the background
+    latestElementsRef.current = elements;
+
+    // 2. THROTTLE CAMERA: Only send panning/zooming data once every 30 milliseconds
+    const now = Date.now();
+    if (now - lastCameraSyncRef.current > 30) {
+      lastCameraSyncRef.current = now;
+      socketRef.current.send(JSON.stringify({ 
+        type: 'camera_sync', 
+        camera: { 
+          scrollX: appState.scrollX, 
+          scrollY: appState.scrollY, 
+          zoom: appState.zoom.value,
+          width: appState.width || window.innerWidth,
+          height: appState.height || window.innerHeight
+        } 
+      }));
+    }
+
+    // 3. If they are NOT actively drawing (like panning or typing text), sync normally
+    if (!isDrawingRef.current) {
+      flushElements();
+    }
+  }, [flushElements]);
 
   const handleImport = async () => {
     if (!excalidrawAPI || !pendingPdf) return;
@@ -922,7 +946,17 @@ export default function App() {
 
       {currentView === 'board' && (
         <>
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }} onPointerDown={() => setIsDrawingOnCanvas(true)} onPointerUp={handleCanvasPointerUp}> 
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }} 
+            onPointerDown={() => {
+              setIsDrawingOnCanvas(true);
+              isDrawingRef.current = true; // 🌟 Pen touches screen
+            }} 
+            onPointerUp={(e) => {
+              handleCanvasPointerUp(e);
+              isDrawingRef.current = false; // 🌟 Pen leaves screen
+              flushElements(); // 🌟 Send stroke!
+            }}
+          > 
             <Excalidraw 
               theme={theme} 
               excalidrawAPI={(api) => setExcalidrawAPI(api)} 
