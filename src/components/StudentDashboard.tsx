@@ -50,7 +50,7 @@ export default function StudentDashboard({ onJoinClass, onLogout, studentInfo, o
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/previous-classes/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'student', branchId: studentInfo.branchId, yearId: studentInfo.yearId, divId: studentInfo.divId })
+      body: JSON.stringify({ role: 'student', branchId: studentInfo?.branchId, yearId: studentInfo?.yearId, divId: studentInfo?.divId })
     })
     .then(res => res.json())
     .then(data => {
@@ -64,7 +64,7 @@ export default function StudentDashboard({ onJoinClass, onLogout, studentInfo, o
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/student/attendance-stats/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: studentEmail, branchId: studentInfo.branchId, yearId: studentInfo.yearId, divId: studentInfo.divId })
+      body: JSON.stringify({ email: studentEmail, branchId: studentInfo?.branchId, yearId: studentInfo?.yearId, divId: studentInfo?.divId })
     })
     .then(res => res.json())
     .then(data => {
