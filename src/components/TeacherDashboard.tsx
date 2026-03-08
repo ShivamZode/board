@@ -27,7 +27,7 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
   const [filteredSubjects, setFilteredSubjects] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('${import.meta.env.VITE_BACKEND_URL}/api/data/')
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/data/`)
       .then(res => res.json())
       .then(data => {
         setBranches(data.branches || []);
@@ -55,7 +55,7 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
   };
 
   const loadHistory = () => {
-    fetch('${import.meta.env.VITE_BACKEND_URL}/api/previous-classes/', {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/previous-classes/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: 'teacher', teacherName })
@@ -66,7 +66,7 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
   };
 
   const handleDeleteClass = (classId: number) => {
-    fetch('${import.meta.env.VITE_BACKEND_URL}/api/delete-class/', {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/delete-class/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ classId })
@@ -77,7 +77,7 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
 
   const handleContinueClass = async (cls: any) => {
     try {
-      const res = await fetch('${import.meta.env.VITE_BACKEND_URL}/api/get-past-board/', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/get-past-board/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ classId: cls.id })
@@ -98,7 +98,7 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
 
   const handleViewAttendance = async (classId: number) => {
     try {
-      const res = await fetch('${import.meta.env.VITE_BACKEND_URL}/api/attendance/report/', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/report/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ classId })
