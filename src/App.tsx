@@ -1486,7 +1486,7 @@ export default function App() {
                       borderTopRightRadius: 0, 
                       overflow: 'hidden',
                       width: 'max-content', // 👈 Hug the buttons tightly
-                      maxWidth: '700px'     // 👈 NEVER grow wider than 700 pixels!
+                      maxWidth: '350px'     // 👈 NEVER grow wider than 700 pixels!
                     }}>
                       <MyCustomToolbar excalidrawAPI={excalidrawAPI} onToolSelect={handleToolSelect} theme={theme} />
                     </div>
