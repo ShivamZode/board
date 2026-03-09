@@ -58,8 +58,7 @@ export default function MyCustomToolbar({ excalidrawAPI, onToolSelect, theme }: 
   ];
 
   return (
-    // 👇 NEW: We pass the theme as a class so CSS can handle the blurry backgrounds!
-    <div className={`custom-toolbar ${theme === 'dark' ? 'dark' : 'light'}`} onPointerDown={handlePointerDown}>
+    <div className="custom-toolbar" onPointerDown={handlePointerDown} style={{ backgroundColor: theme === 'dark' ? '#1e1e24' : 'white', color: theme === 'dark' ? 'white' : 'black' }}>
       
       <div className="toolbar-row">
         <input type="color" className="color-picker-input" value={activeColor} onChange={(e) => changeColor(e.target.value)} title="Custom Color" />
@@ -69,7 +68,7 @@ export default function MyCustomToolbar({ excalidrawAPI, onToolSelect, theme }: 
             className={`color-swatch ${activeColor === color ? 'active' : ''}`} 
             style={{ 
               backgroundColor: getDisplayColor(color), 
-              border: activeColor === color ? 'none' : (theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)')
+              border: theme === 'dark' ? '1px solid #444' : (color === '#ffffff' ? '1px solid #cbd5e1' : 'none')
             }} 
             onClick={() => changeColor(color)} 
           />
