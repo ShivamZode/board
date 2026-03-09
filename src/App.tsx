@@ -178,6 +178,8 @@ export default function App() {
   const [isSnapEnabled, setIsSnapEnabled] = useState(false)
   const [showMermaidModal, setShowMermaidModal] = useState(false)
 
+  const [attentionPrompt, setAttentionPrompt] = useState({ show: false, top: '50%', left: '50%' });
+
   // 🌟 NEW: Global Toast State & Timer
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'info' | 'warning' | 'error' } | null>(null);
   const globalToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -270,6 +272,53 @@ export default function App() {
 
     sessionStorage.setItem('board_isQRMode', isQRMode.toString());
   }, [currentView, roomId, classStartTime, isQRMode]);
+
+  // 🚨 STRICT ATTENTION CHECKER ENGINE
+  useEffect(() => {
+    // Only run if they are a student, in a live board, and the room has the _STRICT flag
+    if (!isStudent || currentView !== 'board' || !roomId || !roomId.endsWith('_STRICT') || isViewingPast) return;
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const triggerPrompt = () => {
+      // Pick a random spot on the screen (between 10% and 80% so it doesn't go off-screen)
+      const top = Math.floor(Math.random() * 70) + 10 + '%';
+      const left = Math.floor(Math.random() * 70) + 10 + '%';
+      
+      setAttentionPrompt({ show: true, top, left });
+
+      // ⏸️ CLOCK OUT: Silently tell the backend they left so their timer stops!
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'leave', roomId, email: currentUserEmail })
+      }).catch(() => {});
+    };
+
+    const scheduleNext = () => {
+      // Random time between 45 seconds and 3 minutes for testing
+      const randomDelay = Math.floor(Math.random() * 5000) + 5000;
+      timeoutId = setTimeout(triggerPrompt, randomDelay);
+    };
+
+    if (!attentionPrompt.show) {
+      scheduleNext();
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [isStudent, currentView, roomId, isViewingPast, currentUserEmail, attentionPrompt.show]);
+
+  // ⏯️ CLOCK IN: The function that runs when they click the button
+  const handleConfirmAttention = () => {
+    setAttentionPrompt({ show: false, top: '50%', left: '50%' });
+    
+    // Resume their attendance timer
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'join', roomId, email: currentUserEmail, name: userFullName })
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     if (currentView === 'board' && !isViewingPast && resumeData && excalidrawAPI) {
@@ -366,7 +415,9 @@ export default function App() {
   };
 
   const handleStartClass = async (classDetails: any) => {
-    const newRoomId = `room_${classDetails.branch.replace(/\s+/g, '')}_${Date.now()}`;
+    // 👇 NEW: Append _STRICT to the room ID if the teacher enabled it
+    const strictSuffix = classDetails.isStrict ? '_STRICT' : '';
+    const newRoomId = `room_${classDetails.branch.replace(/\s+/g, '')}_${Date.now()}${strictSuffix}`;
     
     try {
       await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/start-class/`, {
@@ -993,6 +1044,37 @@ export default function App() {
         }}>
           {toastMessage.type === 'warning' ? '⚠️' : toastMessage.type === 'error' ? '❌' : 'ℹ️'} 
           {toastMessage.text}
+        </div>
+      )}
+
+      {/* 🚨 STRICT ATTENTION PROMPT OVERLAY */}
+      {attentionPrompt.show && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(239, 68, 68, 0.15)', // Very transparent red hue
+          zIndex: 9999999, // Above EVERYTHING
+          pointerEvents: 'auto', // Block drawing while active
+        }}>
+          <button
+            onClick={handleConfirmAttention}
+            style={{
+              position: 'absolute',
+              top: attentionPrompt.top,
+              left: attentionPrompt.left,
+              padding: '15px 30px',
+              background: '#ef4444',
+              color: 'white',
+              border: '2px solid white',
+              borderRadius: '12px',
+              fontSize: 'clamp(14px, 3vw, 18px)',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              boxShadow: '0 10px 40px rgba(239, 68, 68, 0.6)',
+              animation: 'pulse 1.5s infinite' // If you have a pulse class in your CSS!
+            }}
+          >
+            👀 Are you active? (Click to resume)
+          </button>
         </div>
       )}
 
