@@ -21,7 +21,7 @@
   display: flex;
   flex-direction: column;
   gap: clamp(6px, 1.5vw, 14px);
-  width: clamp(240px, 35vw, 420px); /* Stops growing exactly at "Palm Size" */
+  width: clamp(240px, 35vw, 320px); /* Stops growing exactly at "Palm Size" */
   box-shadow: 0 10px 25px rgba(0,0,0,0.3);
   font-family: sans-serif;
   color: white;
@@ -43,8 +43,8 @@
 
 /* Color Swatches */
 .color-swatch {
-  width: clamp(25px, 4vw, 45px);
-  height: clamp(25px, 4vw, 45px);
+  width: clamp(25px, 4vw, 36px);
+  height: clamp(25px, 4vw, 36px);
   border-radius: 8px;
   border: 3px solid transparent;
   cursor: pointer;
@@ -71,14 +71,14 @@
 .tool-btn, .option-btn {
   flex: 1;
   flex-shrink: 0;
-  min-width: clamp(35px, 5vw, 55px);
-  height: clamp(35px, 5vw, 55px);
+  min-width: clamp(35px, 5vw, 45px);
+  height: clamp(35px, 5vw, 45px);
   background: #1e1e1e;
   border: 1px solid #555;
   color: white;
   cursor: pointer;
   border-radius: 8px;
-  font-size: clamp(16px, 2.5vw, 24px); /* Icons scale up smoothly */
+  font-size: clamp(16px, 2.5vw, 20px); /* Icons scale up smoothly */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,15 +109,15 @@
 
 /* --- FLOATING ACTION BUTTON & HEADER STYLES --- */
 .collapsed-circle {
-  width: clamp(40px, 5vw, 55px);
-  height: clamp(40px, 5vw, 55px);
+  width: clamp(40px, 5vw, 48px);
+  height: clamp(40px, 5vw, 48px);
   border-radius: 50%;
   background: rgba(35, 35, 41, 0.25);
   backdrop-filter: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(18px, 2.5vw, 24px);
+  font-size: clamp(18px, 2.5vw, 22px);
   color: white;
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -164,8 +164,8 @@
 
 /* --- MOONS & GHOSTING STYLES --- */
 .moon-circle {
-  width: clamp(35px, 4vw, 45px) !important;
-  height: clamp(35px, 4vw, 45px) !important;
+  width: clamp(35px, 4vw, 40px) !important;
+  height: clamp(35px, 4vw, 40px) !important;
   border-radius: 50%;
   background: rgba(35, 35, 41, 0.9);
   border: 1px solid #555;
