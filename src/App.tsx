@@ -190,6 +190,11 @@ export default function App() {
   const latestElementsRef = useRef<readonly any[]>([]);
   const lastCameraSyncRef = useRef<number>(0);
   const lastCamStateRef = useRef<string>("");
+  // 🌟 NEW LERP & DEBOUNCE TRACKERS
+  const camDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const targetCamRef = useRef<{ scrollX: number, scrollY: number, zoom: number } | null>(null);
+  const currentCamRef = useRef<{ scrollX: number, scrollY: number, zoom: number } | null>(null);
+  const lerpFrameRef = useRef<number | null>(null);
 
   const socketRef = useRef<WebSocket | null>(null)
   const isStudentRef = useRef(isStudent)
@@ -632,6 +637,50 @@ export default function App() {
     const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/board/${roomId}/`);
     socketRef.current = ws
 
+    // 🎥 Math function to smoothly glide from point A to point B
+    const lerp = (start: number, end: number, amt: number) => (1 - amt) * start + amt * end;
+
+    const startLerp = () => {
+      const animate = () => {
+        if (!targetCamRef.current || !currentCamRef.current || !excalidrawAPI) {
+          lerpFrameRef.current = null;
+          return;
+        }
+
+        const curr = currentCamRef.current;
+        const target = targetCamRef.current;
+
+        const dx = target.scrollX - curr.scrollX;
+        const dy = target.scrollY - curr.scrollY;
+        const dz = target.zoom - curr.zoom;
+
+        // If the camera is basically at the destination, snap it and turn off the engine
+        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(dz) < 0.005) {
+          currentCamRef.current = { ...target };
+          excalidrawAPI.updateScene({ appState: { scrollX: target.scrollX, scrollY: target.scrollY, zoom: { value: target.zoom } } });
+          lerpFrameRef.current = null;
+          return;
+        }
+
+        // Otherwise, glide 10% closer to the target every single frame!
+        currentCamRef.current = {
+          scrollX: lerp(curr.scrollX, target.scrollX, 0.1),
+          scrollY: lerp(curr.scrollY, target.scrollY, 0.1),
+          zoom: lerp(curr.zoom, target.zoom, 0.1)
+        };
+
+        excalidrawAPI.updateScene({ appState: {
+          scrollX: currentCamRef.current.scrollX,
+          scrollY: currentCamRef.current.scrollY,
+          zoom: { value: currentCamRef.current.zoom }
+        }});
+
+        // Loop the animation
+        lerpFrameRef.current = requestAnimationFrame(animate);
+      };
+      lerpFrameRef.current = requestAnimationFrame(animate);
+    };
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data)
       if (data.type === 'wipe_board') {
@@ -680,32 +729,32 @@ export default function App() {
         const myHeight = myAppState.height || window.innerHeight;
 
         if (!tCam.width || !tCam.height) {
-          excalidrawAPI.updateScene({ appState: { scrollX: tCam.scrollX, scrollY: tCam.scrollY, zoom: { value: tCam.zoom } } });
-          return;
+          targetCamRef.current = { scrollX: tCam.scrollX, scrollY: tCam.scrollY, zoom: tCam.zoom };
+        } else {
+          // Do the screen-size conversion math
+          const teacherCenterX = (tCam.width / 2) / tCam.zoom - tCam.scrollX;
+          const teacherCenterY = (tCam.height / 2) / tCam.zoom - tCam.scrollY;
+          const widthRatio = myWidth / tCam.width;
+          const heightRatio = myHeight / tCam.height;
+          const scaleFactor = Math.min(1, Math.min(widthRatio, heightRatio) * 0.95); 
+          
+          const newZoom = Math.max(0.1, tCam.zoom * scaleFactor); 
+          const newScrollX = (myWidth / 2) / newZoom - teacherCenterX;
+          const newScrollY = (myHeight / 2) / newZoom - teacherCenterY;
+
+          // 🎯 Set the crosshairs for the new target destination
+          targetCamRef.current = { scrollX: newScrollX, scrollY: newScrollY, zoom: newZoom };
         }
 
-        const teacherCenterX = (tCam.width / 2) / tCam.zoom - tCam.scrollX;
-        const teacherCenterY = (tCam.height / 2) / tCam.zoom - tCam.scrollY;
-
-        const widthRatio = myWidth / tCam.width;
-        const heightRatio = myHeight / tCam.height;
-        const scaleFactor = Math.min(1, Math.min(widthRatio, heightRatio) * 0.95); 
-        
-        const newZoom = Math.max(0.1, tCam.zoom * scaleFactor); 
-
-        const newScrollX = (myWidth / 2) / newZoom - teacherCenterX;
-        const newScrollY = (myHeight / 2) / newZoom - teacherCenterY;
-
-        excalidrawAPI.updateScene({ 
-          appState: { 
-            scrollX: newScrollX, 
-            scrollY: newScrollY, 
-            zoom: { value: newZoom } 
-          } 
-        }); 
+        // If this is the very first sync, jump instantly. Otherwise, start the smooth glide!
+        if (!currentCamRef.current) {
+          currentCamRef.current = { ...targetCamRef.current };
+          excalidrawAPI.updateScene({ appState: { scrollX: targetCamRef.current.scrollX, scrollY: targetCamRef.current.scrollY, zoom: { value: targetCamRef.current.zoom } } });
+        } else {
+          if (!lerpFrameRef.current) startLerp();
+        }
         return;
       }
-
       if (data.drawing_data && data.clientId !== clientIdRef.current) {
         if (data.files && Object.keys(data.files).length > 0) {
           excalidrawAPI.addFiles(Object.values(data.files));
@@ -770,28 +819,34 @@ export default function App() {
     // 1. Always save the latest drawing data quietly in the background
     latestElementsRef.current = elements;
 
-    // 2. CHECK CAMERA MOVEMENT: Only sync if they actually panned/zoomed!
-    // We use .toFixed(1) to ignore microscopic floating-point pixel jitters
+    // 2. CHECK CAMERA MOVEMENT
     const newCamState = `${appState.scrollX.toFixed(1)}|${appState.scrollY.toFixed(1)}|${appState.zoom.value}`;
 
-    if (newCamState !== lastCamStateRef.current) {
-      const now = Date.now();
-      
-      // Throttle to 100ms (10fps is super smooth for panning and saves the server)
-      if (now - lastCameraSyncRef.current > 100) {
-        lastCameraSyncRef.current = now;
+      if (newCamState !== lastCamStateRef.current) {
         lastCamStateRef.current = newCamState;
+        const now = Date.now();
 
-        socketRef.current.send(JSON.stringify({ 
-          type: 'camera_sync', 
-          camera: { 
-            scrollX: appState.scrollX, 
-            scrollY: appState.scrollY, 
-            zoom: appState.zoom.value,
-            width: appState.width || window.innerWidth,
-            height: appState.height || window.innerHeight
-          } 
-        }));
+        const sendCam = () => {
+          socketRef.current.send(JSON.stringify({ 
+            type: 'camera_sync', 
+            camera: { 
+              scrollX: appState.scrollX, scrollY: appState.scrollY, zoom: appState.zoom.value,
+              width: appState.width || window.innerWidth, height: appState.height || window.innerHeight
+            } 
+          }));
+          lastCameraSyncRef.current = Date.now();
+        };
+
+        // Rule A: If they have been panning continuously for 1 full second, send an update
+        if (now - lastCameraSyncRef.current > 1000) {
+          sendCam();
+        }
+
+        // Rule B: If they stop moving for 200ms, send the final exact coordinate
+        if (camDebounceRef.current) clearTimeout(camDebounceRef.current);
+        camDebounceRef.current = setTimeout(() => {
+          sendCam();
+        }, 200);
       }
     }
 
