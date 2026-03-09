@@ -28,6 +28,10 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
 
   const [isStrict, setIsStrict] = useState(() => localStorage.getItem('board_strict') === 'true');
 
+  // 👇 NEW: Track the custom time settings (Default: 1 min to 3 mins)
+  const [strictMin, setStrictMin] = useState({ m: 5, s: 0 });
+  const [strictMax, setStrictMax] = useState({ m: 10, s: 0 });
+  
   useEffect(() => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/data/`)
       .then(res => res.json())
@@ -52,9 +56,23 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
     e.preventDefault();
     const branchName = branches.find(b => b.id.toString() === formData?.branchId)?.name || 'Unknown';
     const subjectName = allSubjects.find(s => s.id.toString() === formData.subjectId)?.name || 'Unknown';
+
+    // 👇 NEW: Calculate total seconds and ensure Min isn't accidentally bigger than Max
+    const totalMinSecs = (strictMin.m * 60) + strictMin.s;
+    const totalMaxSecs = (strictMax.m * 60) + strictMax.s;
+    const finalMin = Math.min(totalMinSecs, totalMaxSecs);
+    const finalMax = Math.max(totalMinSecs, totalMaxSecs) || 10; // Failsafe: At least 10 seconds
     
     // ✅ ADDED isStrict to the payload!
-    onStartClass({ ...formData, branch: branchName, subject: subjectName, notifyType, isStrict });
+    onStartClass({ 
+      ...formData, 
+      branch: branchName, 
+      subject: subjectName, 
+      notifyType, 
+      isStrict,
+      strictMin: finalMin, // 👈 Send to App.tsx
+      strictMax: finalMax  // 👈 Send to App.tsx
+    });
     setShowModal(false);
   };
 
@@ -137,8 +155,8 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
         {/* The Action Cards */}
         <div className="dashboard-grid" style={gridStyle}>
           
-          <div style={{ marginBottom: '20px', padding: '15px', background: '#fff5f5', border: '1px solid #fecaca', borderRadius: '8px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: '#ef4444' }}>
+          <div style={{ marginBottom: '20px', padding: '15px', background: isStrict ? '#fff5f5' : '#f8fafc', border: isStrict ? '1px solid #fecaca' : '1px solid #e2e8f0', borderRadius: '8px', transition: 'all 0.3s' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: isStrict ? '#ef4444' : '#64748b' }}>
               <input 
                 type="checkbox" 
                 checked={isStrict} 
@@ -150,9 +168,29 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
               />
               🚨 Strict Attention Checker
             </label>
-            <p style={{ margin: '5px 0 0 28px', fontSize: '12px', color: '#64748b' }}>
-              All further classes will randomly prompt students to verify they are active. Their attendance time will pause until they confirm.
-            </p>
+            
+            {/* 👇 NEW: The Settings Panel that opens when checked! */}
+            {isStrict && (
+              <div style={{ marginTop: '15px', padding: '15px', background: 'white', borderRadius: '8px', border: '1px solid #fecaca', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: 'bold' }}>Prompt students randomly between:</p>
+                
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>Min:</span>
+                    <input type="number" min="0" value={strictMin.m} onChange={e => setStrictMin({...strictMin, m: Number(e.target.value)})} style={{ width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center' }} /> <span style={{fontSize: '12px'}}>m</span>
+                    <input type="number" min="0" max="59" value={strictMin.s} onChange={e => setStrictMin({...strictMin, s: Number(e.target.value)})} style={{ width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center' }} /> <span style={{fontSize: '12px'}}>s</span>
+                  </div>
+                  
+                  <span style={{ color: '#94a3b8', fontWeight: 'bold' }}>AND</span>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>Max:</span>
+                    <input type="number" min="0" value={strictMax.m} onChange={e => setStrictMax({...strictMax, m: Number(e.target.value)})} style={{ width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center' }} /> <span style={{fontSize: '12px'}}>m</span>
+                    <input type="number" min="0" max="59" value={strictMax.s} onChange={e => setStrictMax({...strictMax, s: Number(e.target.value)})} style={{ width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center' }} /> <span style={{fontSize: '12px'}}>s</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           <div style={activeCardStyle} onClick={() => setShowModal(true)}>
