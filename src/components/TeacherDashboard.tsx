@@ -26,6 +26,8 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
   const [allSubjects, setAllSubjects] = useState<any[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<any[]>([]);
 
+  const [isStrict, setIsStrict] = useState(() => localStorage.getItem('board_strict') === 'true');
+
   useEffect(() => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/data/`)
       .then(res => res.json())
@@ -132,6 +134,25 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
 
         {/* The Action Cards */}
         <div className="dashboard-grid" style={gridStyle}>
+          
+          <div style={{ marginBottom: '20px', padding: '15px', background: '#fff5f5', border: '1px solid #fecaca', borderRadius: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: '#ef4444' }}>
+              <input 
+                type="checkbox" 
+                checked={isStrict} 
+                onChange={(e) => {
+                  setIsStrict(e.target.checked);
+                  localStorage.setItem('board_strict', e.target.checked.toString());
+                }} 
+                style={{ width: '18px', height: '18px' }}
+              />
+              🚨 Strict Attention Checker
+            </label>
+            <p style={{ margin: '5px 0 0 28px', fontSize: '12px', color: '#64748b' }}>
+              All further classes will randomly prompt students to verify they are active. Their attendance time will pause until they confirm.
+            </p>
+          </div>
+          
           <div style={activeCardStyle} onClick={() => setShowModal(true)}>
             <span style={iconStyle}>▶️</span><h3 style={{ margin: 0 }}>Start New Class</h3>
           </div>
