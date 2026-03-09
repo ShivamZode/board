@@ -742,17 +742,19 @@ export default function App() {
           const newScrollX = (myWidth / 2) / newZoom - teacherCenterX;
           const newScrollY = (myHeight / 2) / newZoom - teacherCenterY;
 
-          // 🎯 Set the crosshairs for the new target destination
           targetCamRef.current = { scrollX: newScrollX, scrollY: newScrollY, zoom: newZoom };
         }
 
-        // If this is the very first sync, jump instantly. Otherwise, start the smooth glide!
-        if (!currentCamRef.current) {
-          currentCamRef.current = { ...targetCamRef.current };
-          excalidrawAPI.updateScene({ appState: { scrollX: targetCamRef.current.scrollX, scrollY: targetCamRef.current.scrollY, zoom: { value: targetCamRef.current.zoom } } });
-        } else {
-          if (!lerpFrameRef.current) startLerp();
-        }
+        // 🌟 THE FIX: Always set the 'current' position to where the student ACTUALLY is right now!
+        currentCamRef.current = { 
+          scrollX: myAppState.scrollX, 
+          scrollY: myAppState.scrollY, 
+          zoom: myAppState.zoom.value 
+        };
+
+        // Start the engine if it's not already running
+        if (!lerpFrameRef.current) startLerp();
+        
         return;
       }
       if (data.drawing_data && data.clientId !== clientIdRef.current) {
@@ -783,7 +785,10 @@ export default function App() {
         excalidrawAPI.updateScene({ elements: trustedElements });
       }
     }
-    return () => ws.close()
+    return () => {
+      ws.close();
+      if (lerpFrameRef.current) cancelAnimationFrame(lerpFrameRef.current);
+    };
   }, [excalidrawAPI, isAuthenticated, showToast]) 
 
   //Create the "Flush" Function
@@ -812,7 +817,7 @@ export default function App() {
     }
   }, [excalidrawAPI]);
 
-  //chnaged the handleExcalidrawChange
+  // ✅ FIXED: Removed the extra syntax brace that crashed the app
   const handleExcalidrawChange = useCallback((elements: readonly any[], appState: any) => {
     if (isStudentRef.current || socketRef.current?.readyState !== WebSocket.OPEN) return;
 
@@ -822,33 +827,33 @@ export default function App() {
     // 2. CHECK CAMERA MOVEMENT
     const newCamState = `${appState.scrollX.toFixed(1)}|${appState.scrollY.toFixed(1)}|${appState.zoom.value}`;
 
-      if (newCamState !== lastCamStateRef.current) {
-        lastCamStateRef.current = newCamState;
-        const now = Date.now();
+    if (newCamState !== lastCamStateRef.current) {
+      lastCamStateRef.current = newCamState;
+      const now = Date.now();
 
-        const sendCam = () => {
-          socketRef.current.send(JSON.stringify({ 
-            type: 'camera_sync', 
-            camera: { 
-              scrollX: appState.scrollX, scrollY: appState.scrollY, zoom: appState.zoom.value,
-              width: appState.width || window.innerWidth, height: appState.height || window.innerHeight
-            } 
-          }));
-          lastCameraSyncRef.current = Date.now();
-        };
+      const sendCam = () => {
+        socketRef.current.send(JSON.stringify({ 
+          type: 'camera_sync', 
+          camera: { 
+            scrollX: appState.scrollX, scrollY: appState.scrollY, zoom: appState.zoom.value,
+            width: appState.width || window.innerWidth, height: appState.height || window.innerHeight
+          } 
+        }));
+        lastCameraSyncRef.current = Date.now();
+      };
 
-        // Rule A: If they have been panning continuously for 1 full second, send an update
-        if (now - lastCameraSyncRef.current > 1000) {
-          sendCam();
-        }
-
-        // Rule B: If they stop moving for 200ms, send the final exact coordinate
-        if (camDebounceRef.current) clearTimeout(camDebounceRef.current);
-        camDebounceRef.current = setTimeout(() => {
-          sendCam();
-        }, 200);
+      // Rule A: If they have been panning continuously for 1 full second, send an update
+      if (now - lastCameraSyncRef.current > 1000) {
+        sendCam();
       }
+
+      // Rule B: If they stop moving for 200ms, send the final exact coordinate
+      if (camDebounceRef.current) clearTimeout(camDebounceRef.current);
+      camDebounceRef.current = setTimeout(() => {
+        sendCam();
+      }, 200);
     }
+    
 
     // 3. Only flush drawing data if the pen is up
     if (!isDrawingRef.current) {
