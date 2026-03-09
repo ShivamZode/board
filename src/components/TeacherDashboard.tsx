@@ -52,7 +52,9 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
     e.preventDefault();
     const branchName = branches.find(b => b.id.toString() === formData?.branchId)?.name || 'Unknown';
     const subjectName = allSubjects.find(s => s.id.toString() === formData.subjectId)?.name || 'Unknown';
-    onStartClass({ ...formData, branch: branchName, subject: subjectName, notifyType });
+    
+    // ✅ ADDED isStrict to the payload!
+    onStartClass({ ...formData, branch: branchName, subject: subjectName, notifyType, isStrict });
     setShowModal(false);
   };
 
