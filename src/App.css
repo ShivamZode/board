@@ -12,50 +12,67 @@
   visibility: hidden !important;
 }
 
-/* 2. DYNAMIC CUSTOM TOOLBAR STYLES */
+/* =========================================
+   2. GLASSMORPHIC TOOLBAR STYLES
+   ========================================= */
+
+/* BASE (Light Mode) */
 .custom-toolbar {
-  background: #232329;
-  /* clamp(MIN, IDEAL, MAX) */
-  padding: clamp(8px, 2vw, 18px);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px; /* Ultra-smooth rounded corners */
+  padding: clamp(16px, 2.5vw, 24px);
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 1.5vw, 14px);
-  width: clamp(240px, 35vw, 420px); /* Restored to 420px */
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  font-family: sans-serif;
-  color: white;
-  border: 1px solid #444;
+  gap: clamp(10px, 1.8vw, 16px);
+  width: clamp(260px, 35vw, 420px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.02);
   box-sizing: border-box;
+  color: #334155;
+}
+
+/* DARK MODE */
+.custom-toolbar.dark {
+  background: rgba(30, 30, 36, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  color: #f8fafc;
 }
 
 /* Scrollable Rows */
 .toolbar-row {
   display: flex;
-  gap: clamp(6px, 1vw, 10px);
+  gap: clamp(8px, 1.2vw, 12px);
   overflow-x: auto;
-  padding-bottom: 8px; /* Room for scrollbar */
+  padding-bottom: 8px; 
   scroll-behavior: smooth;
 }
 
-.toolbar-row::-webkit-scrollbar { height: 6px; }
-.toolbar-row::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+.toolbar-row::-webkit-scrollbar { height: 4px; }
+.toolbar-row::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.4); border-radius: 10px; }
 .toolbar-row::-webkit-scrollbar-track { background: transparent; }
 
 /* Color Swatches */
 .color-swatch {
-  width: clamp(25px, 4vw, 45px);  /* Restored to 45px */
-  height: clamp(25px, 4vw, 45px); /* Restored to 45px */
-  border-radius: 8px;
-  border: 3px solid transparent;
+  width: clamp(30px, 4vw, 40px);
+  height: clamp(30px, 4vw, 40px);
+  border-radius: 50%; /* Circle swatches look way better! */
   cursor: pointer;
   flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.color-swatch.active { border-color: #ffffff; }
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active { 
+  transform: scale(1.15); 
+  box-shadow: 0 0 0 3px var(--accent-bg, #ffffff), 0 0 0 5px #6366f1; 
+}
+.custom-toolbar.dark .color-swatch.active { box-shadow: 0 0 0 3px #1e1e24, 0 0 0 5px #6366f1; }
 
 .color-picker-input {
-  width: clamp(25px, 4vw, 45px);  /* Restored to 45px */
-  height: clamp(25px, 4vw, 45px); /* Restored to 45px */
+  width: clamp(30px, 4vw, 40px);
+  height: clamp(30px, 4vw, 40px);
   padding: 0;
   border: none;
   cursor: pointer;
@@ -64,50 +81,74 @@
 }
 .color-picker-input::-webkit-color-swatch-wrapper { padding: 0; }
 .color-picker-input::-webkit-color-swatch {
-  border: 1px solid #777;
-  border-radius: 8px;
+  border: 1px solid rgba(150,150,150,0.3);
+  border-radius: 50%;
 }
 
 /* Tool Buttons */
 .tool-btn, .option-btn {
   flex: 1;
   flex-shrink: 0;
-  min-width: clamp(35px, 5vw, 55px); /* Restored to 55px */
-  height: clamp(35px, 5vw, 55px);    /* Restored to 55px */
-  background: #1e1e1e;
-  border: 1px solid #555;
-  color: white;
+  min-width: clamp(35px, 5vw, 50px);
+  height: clamp(35px, 5vw, 50px);
+  background: transparent; /* No more boxy backgrounds */
+  border: none;
+  color: inherit;
   cursor: pointer;
-  border-radius: 8px;
-  font-size: clamp(16px, 2.5vw, 24px); /* Restored to 24px */
+  border-radius: 12px;
+  font-size: clamp(16px, 2.5vw, 22px);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.option-btn { height: clamp(28px, 4vw, 40px); } 
+.option-btn { height: clamp(30px, 4vw, 40px); font-size: clamp(14px, 2vw, 18px); } 
 
+.tool-btn:hover, .option-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+.custom-toolbar.dark .tool-btn:hover, .custom-toolbar.dark .option-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Vibrant Active State */
 .tool-btn.active, .option-btn.active {
-  background: #3b82f6; 
-  border-color: #60a5fa;
+  background: #6366f1; /* Premium Indigo */
+  color: white;
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+  transform: translateY(-2px) scale(1.05);
 }
 
 /* Sliders */
 .slider-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 0 4px;
 }
 .slider-container label {
-  font-size: clamp(10px, 1.5vw, 14px);
-  width: 50px;
-  color: #ccc;
+  font-size: clamp(11px, 1.5vw, 14px);
+  font-weight: 600;
+  width: 55px;
+  opacity: 0.7;
 }
 .slider-container input[type="range"] {
   flex: 1;
   cursor: pointer;
+  accent-color: #6366f1; /* Makes the slider match the buttons! */
 }
 
+/* Update Header to match Glass theme */
+.draw-toolbar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  padding: clamp(6px, 1.5vw, 10px) clamp(16px, 2.5vw, 24px);
+  border-bottom: 1px solid rgba(150, 150, 150, 0.2);
+  margin-bottom: 10px;
+}
 /* --- FLOATING ACTION BUTTON & HEADER STYLES --- */
 .collapsed-circle {
   width: clamp(40px, 5vw, 55px);    /* Restored to 55px */
