@@ -233,7 +233,7 @@ export default function App() {
 
   const handleOpenPastClass = async (classId: number) => {
     try {
-      const res = await fetch('${import.meta.env.VITE_BACKEND_URL}/api/get-past-board/', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/get-past-board/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ classId })
