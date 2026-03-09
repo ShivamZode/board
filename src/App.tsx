@@ -275,19 +275,30 @@ export default function App() {
 
   // 🚨 STRICT ATTENTION CHECKER ENGINE
   useEffect(() => {
-    // Only run if they are a student, in a live board, and the room has the _STRICT flag
-    if (!isStudent || currentView !== 'board' || !roomId || !roomId.endsWith('_STRICT') || isViewingPast) return;
+    // We changed .endsWith to .includes because the room ID now has numbers at the end!
+    if (!isStudent || currentView !== 'board' || !roomId || !roomId.includes('_STRICT') || isViewingPast) return;
+
+    // 1. Decode the Room ID to get the Teacher's custom times!
+    let minMs = 45000; // Defaults
+    let maxMs = 180000;
+    
+    if (roomId.includes('_STRICT_')) {
+      const parts = roomId.split('_STRICT_')[1].split('_');
+      if (parts.length === 2) {
+        minMs = parseInt(parts[0]) * 1000;
+        maxMs = parseInt(parts[1]) * 1000;
+      }
+    }
 
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const triggerPrompt = () => {
-      // Pick a random spot on the screen (between 10% and 80% so it doesn't go off-screen)
       const top = Math.floor(Math.random() * 70) + 10 + '%';
       const left = Math.floor(Math.random() * 70) + 10 + '%';
       
       setAttentionPrompt({ show: true, top, left });
 
-      // ⏸️ CLOCK OUT: Silently tell the backend they left so their timer stops!
+      // ⏸️ CLOCK OUT
       fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -296,8 +307,8 @@ export default function App() {
     };
 
     const scheduleNext = () => {
-      // Random time between 45 seconds and 3 minutes for testing
-      const randomDelay = Math.floor(Math.random() * 5000) + 5000;
+      // 👇 NEW: Calculate the random delay using the Teacher's custom boundaries!
+      const randomDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
       timeoutId = setTimeout(triggerPrompt, randomDelay);
     };
 
@@ -416,7 +427,8 @@ export default function App() {
 
   const handleStartClass = async (classDetails: any) => {
     // 👇 NEW: Append _STRICT to the room ID if the teacher enabled it
-    const strictSuffix = classDetails.isStrict ? '_STRICT' : '';
+    // 👇 NEW: Append _STRICT_minSecs_maxSecs to the room ID!
+    const strictSuffix = classDetails.isStrict ? `_STRICT_${classDetails.strictMin}_${classDetails.strictMax}` : '';
     const newRoomId = `room_${classDetails.branch.replace(/\s+/g, '')}_${Date.now()}${strictSuffix}`;
     
     try {
