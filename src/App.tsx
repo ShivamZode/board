@@ -1481,7 +1481,7 @@ export default function App() {
                         <button className="pin-btn" onClick={forceCollapse} style={{ background: '#ef4444', color: 'white', borderColor: '#dc2626' }} title="Collapse Now">❌</button>
                       </div>
                     </div>
-                    div style={{ padding: '10px' }}>
+                    <div style={{ padding: '10px' }}>
                       <MyCustomToolbar excalidrawAPI={excalidrawAPI} onToolSelect={handleToolSelect} theme={theme} />
                     </div>
                   </div>
