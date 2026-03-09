@@ -843,7 +843,7 @@ export default function App() {
       };
 
       // Rule A: If they have been panning continuously for 1 full second, send an update
-      if (now - lastCameraSyncRef.current > 1000) {
+      if (now - lastCameraSyncRef.current > 100) {
         sendCam();
       }
 
