@@ -1,5 +1,6 @@
 import React, { useState, useEffect, type CSSProperties } from 'react';
 
+// --- Interface ---
 interface TeacherDashboardProps {
   onStartClass: (classDetails: any) => void;
   onLogout: () => void;
@@ -7,6 +8,39 @@ interface TeacherDashboardProps {
   onOpenPastClass: (classId: number) => void; 
 }
 
+// --- Strongly Typed Styles (Moved to top to fix "used before declaration" error) ---
+const gridStyle: CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(200px, 40vw, 300px), 1fr))', gap: 'clamp(15px, 3vw, 20px)' };
+
+const activeCardStyle: CSSProperties = { background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', padding: 'clamp(20px, 5vw, 30px)', borderRadius: '20px', cursor: 'pointer', boxShadow: '0 10px 20px rgba(37, 99, 235, 0.3)', transition: 'transform 0.2s', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
+const inactiveCardStyle: CSSProperties = { background: '#ffffff', color: '#475569', padding: 'clamp(20px, 5vw, 30px)', borderRadius: '20px', cursor: 'pointer', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' };
+
+const iconStyle: CSSProperties = { fontSize: 'clamp(32px, 6vw, 44px)', display: 'block', marginBottom: '12px' };
+
+const modalOverlayStyle: CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '15px' };
+const modalStyle: CSSProperties = { background: '#ffffff', padding: 'clamp(20px, 5vw, 30px)', borderRadius: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' };
+const modalWideStyle: CSSProperties = { ...modalStyle, maxWidth: '700px' };
+const modalHeaderStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px solid #e2e8f0' };
+const modalTitleStyle: CSSProperties = { margin: 0, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: 800, color: '#0f172a' };
+
+const historyCardStyle: CSSProperties = { display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '15px', borderRadius: '16px', borderLeft: '5px solid #3b82f6', borderTop: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', gap: '10px' };
+
+const inputStyle: CSSProperties = { padding: '12px 15px', borderRadius: '12px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box', color: '#0f172a', fontSize: '15px', height: '48px', appearance: 'none', backgroundColor: '#f8fafc' };
+const timeInputStyle: CSSProperties = { width: '55px', height: '40px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '15px', backgroundColor: '#f8fafc' };
+
+const logoutBtnStyle: CSSProperties = { background: '#fee2e2', color: '#dc2626', padding: '10px 16px', border: '1px solid #fecaca', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s' };
+const closeBtnStyle: CSSProperties = { background: '#f1f5f9', color: '#64748b', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' };
+
+const actionBtnStyle = (bg: string, flex: boolean): CSSProperties => ({ flex: flex ? '1 1 auto' : '0 0 auto', minWidth: 'fit-content', background: bg, color: 'white', border: 'none', padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' });
+const submitBtnStyle: CSSProperties = { flex: 2, padding: '14px', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)' };
+const cancelBtnStyle: CSSProperties = { flex: 1, padding: '14px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' };
+
+const toggleBtnStyle = (isActive: boolean): CSSProperties => ({ flex: 1, padding: '15px 10px', borderRadius: '12px', border: isActive ? '2px solid #3b82f6' : '1px solid #cbd5e1', background: isActive ? '#eff6ff' : 'white', color: isActive ? '#1e40af' : '#64748b', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' });
+
+const filterTabStyle = (isActive: boolean): CSSProperties => ({ flex: '1 1 min-content', padding: '12px 10px', cursor: 'pointer', fontWeight: 'bold', borderRadius: '10px', border: 'none', background: isActive ? '#334155' : 'white', color: isActive ? 'white' : '#64748b', boxShadow: isActive ? '0 4px 6px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', borderBottom: isActive ? 'none' : '1px solid #e2e8f0', transition: 'all 0.2s', fontSize: '14px', whiteSpace: 'nowrap' });
+const rangeInputStyle: CSSProperties = { width: '60px', height: '40px', padding: '0 5px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '15px' };
+
+
+// --- Main Component ---
 export default function TeacherDashboard({ onStartClass, onLogout, teacherName, onOpenPastClass }: TeacherDashboardProps) {
   const [showModal, setShowModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -28,6 +62,7 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
 
   const [isStrict, setIsStrict] = useState(() => localStorage.getItem('board_strict') === 'true');
 
+  // 👇 Track the custom time settings (Default: 1 min to 3 mins)
   const [strictMin, setStrictMin] = useState({ m: 5, s: 0 });
   const [strictMax, setStrictMax] = useState({ m: 10, s: 0 });
   
@@ -56,19 +91,21 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
     const branchName = branches.find(b => b.id.toString() === formData?.branchId)?.name || 'Unknown';
     const subjectName = allSubjects.find(s => s.id.toString() === formData.subjectId)?.name || 'Unknown';
 
+    // 👇 Calculate total seconds and ensure Min isn't accidentally bigger than Max
     const totalMinSecs = (strictMin.m * 60) + strictMin.s;
     const totalMaxSecs = (strictMax.m * 60) + strictMax.s;
     const finalMin = Math.min(totalMinSecs, totalMaxSecs);
-    const finalMax = Math.max(totalMinSecs, totalMaxSecs) || 10; 
+    const finalMax = Math.max(totalMinSecs, totalMaxSecs) || 10; // Failsafe: At least 10 seconds
     
+    // ✅ ADDED isStrict to the payload!
     onStartClass({ 
       ...formData, 
       branch: branchName, 
       subject: subjectName, 
       notifyType, 
       isStrict,
-      strictMin: finalMin, 
-      strictMax: finalMax  
+      strictMin: finalMin, // 👈 Send to App.tsx
+      strictMax: finalMax  // 👈 Send to App.tsx
     });
     setShowModal(false);
   };
@@ -318,34 +355,3 @@ export default function TeacherDashboard({ onStartClass, onLogout, teacherName, 
     </div>
   );
 }
-
-// --- Strongly Typed Styles ---
-const gridStyle: CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(200px, 40vw, 300px), 1fr))', gap: 'clamp(15px, 3vw, 20px)' };
-
-const activeCardStyle: CSSProperties = { background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', padding: 'clamp(20px, 5vw, 30px)', borderRadius: '20px', cursor: 'pointer', boxShadow: '0 10px 20px rgba(37, 99, 235, 0.3)', transition: 'transform 0.2s', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
-const inactiveCardStyle: CSSProperties = { background: '#ffffff', color: '#475569', padding: 'clamp(20px, 5vw, 30px)', borderRadius: '20px', cursor: 'pointer', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' };
-
-const iconStyle: CSSProperties = { fontSize: 'clamp(32px, 6vw, 44px)', display: 'block', marginBottom: '12px' };
-
-const modalOverlayStyle: CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '15px' };
-const modalStyle: CSSProperties = { background: '#ffffff', padding: 'clamp(20px, 5vw, 30px)', borderRadius: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' };
-const modalWideStyle: CSSProperties = { ...modalStyle, maxWidth: '700px' };
-const modalHeaderStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px solid #e2e8f0' };
-const modalTitleStyle: CSSProperties = { margin: 0, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: 800, color: '#0f172a' };
-
-const historyCardStyle: CSSProperties = { display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '15px', borderRadius: '16px', borderLeft: '5px solid #3b82f6', borderTop: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', gap: '10px' };
-
-const inputStyle: CSSProperties = { padding: '12px 15px', borderRadius: '12px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box', color: '#0f172a', fontSize: '15px', height: '48px', appearance: 'none', backgroundColor: '#f8fafc' };
-const timeInputStyle: CSSProperties = { width: '55px', height: '40px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '15px', backgroundColor: '#f8fafc' };
-
-const logoutBtnStyle: CSSProperties = { background: '#fee2e2', color: '#dc2626', padding: '10px 16px', border: '1px solid #fecaca', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s' };
-const closeBtnStyle: CSSProperties = { background: '#f1f5f9', color: '#64748b', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' };
-
-const actionBtnStyle = (bg: string, flex: boolean): CSSProperties => ({ flex: flex ? '1 1 auto' : '0 0 auto', minWidth: 'fit-content', background: bg, color: 'white', border: 'none', padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' });
-const submitBtnStyle: CSSProperties = { flex: 2, padding: '14px', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)' };
-const cancelBtnStyle: CSSProperties = { flex: 1, padding: '14px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' };
-
-const toggleBtnStyle = (isActive: boolean): CSSProperties => ({ flex: 1, padding: '15px 10px', borderRadius: '12px', border: isActive ? '2px solid #3b82f6' : '1px solid #cbd5e1', background: isActive ? '#eff6ff' : 'white', color: isActive ? '#1e40af' : '#64748b', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' });
-
-const filterTabStyle = (isActive: boolean): CSSProperties => ({ flex: '1 1 min-content', padding: '12px 10px', cursor: 'pointer', fontWeight: 'bold', borderRadius: '10px', border: 'none', background: isActive ? '#334155' : 'white', color: isActive ? 'white' : '#64748b', boxShadow: isActive ? '0 4px 6px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)', borderBottom: isActive ? 'none' : '1px solid #e2e8f0', transition: 'all 0.2s', fontSize: '14px', whiteSpace: 'nowrap' });
-const rangeInputStyle: CSSProperties = { width: '60px', height: '40px', padding: '0 5px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '15px' };
