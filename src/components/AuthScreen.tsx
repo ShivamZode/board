@@ -18,7 +18,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   useEffect(() => {
     const fetchDatabaseInfo = async () => {
       try {
-        const response = await fetch('${import.meta.env.VITE_BACKEND_URL}/api/data/');
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/data/`);
         if (response.ok) {
           const data = await response.json();
           setAvailableColleges(data.colleges || []);

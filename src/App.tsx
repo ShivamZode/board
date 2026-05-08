@@ -178,6 +178,8 @@ export default function App() {
   const [isSnapEnabled, setIsSnapEnabled] = useState(false)
   const [showMermaidModal, setShowMermaidModal] = useState(false)
 
+  const [attentionPrompt, setAttentionPrompt] = useState({ show: false, top: '50%', left: '50%' });
+
   // 🌟 NEW: Global Toast State & Timer
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'info' | 'warning' | 'error' } | null>(null);
   const globalToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -185,6 +187,16 @@ export default function App() {
   const collapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const topTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bottomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isDrawingRef = useRef(false);
+  const latestElementsRef = useRef<readonly any[]>([]);
+  const lastCameraSyncRef = useRef<number>(0);
+  const lastCamStateRef = useRef<string>("");
+  // 🌟 NEW LERP & DEBOUNCE TRACKERS
+  const camDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const targetCamRef = useRef<{ scrollX: number, scrollY: number, zoom: number } | null>(null);
+  const currentCamRef = useRef<{ scrollX: number, scrollY: number, zoom: number } | null>(null);
+  const lerpFrameRef = useRef<number | null>(null);
 
   const socketRef = useRef<WebSocket | null>(null)
   const isStudentRef = useRef(isStudent)
@@ -228,7 +240,7 @@ export default function App() {
 
   const handleOpenPastClass = async (classId: number) => {
     try {
-      const res = await fetch('${import.meta.env.VITE_BACKEND_URL}/api/get-past-board/', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/get-past-board/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ classId })
@@ -261,6 +273,64 @@ export default function App() {
     sessionStorage.setItem('board_isQRMode', isQRMode.toString());
   }, [currentView, roomId, classStartTime, isQRMode]);
 
+  // 🚨 STRICT ATTENTION CHECKER ENGINE
+  useEffect(() => {
+    // We changed .endsWith to .includes because the room ID now has numbers at the end!
+    if (!isStudent || currentView !== 'board' || !roomId || !roomId.includes('_STRICT') || isViewingPast) return;
+
+    // 1. Decode the Room ID to get the Teacher's custom times!
+    let minMs = 45000; // Defaults
+    let maxMs = 180000;
+    
+    if (roomId.includes('_STRICT_')) {
+      const parts = roomId.split('_STRICT_')[1].split('_');
+      if (parts.length === 2) {
+        minMs = parseInt(parts[0]) * 1000;
+        maxMs = parseInt(parts[1]) * 1000;
+      }
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const triggerPrompt = () => {
+      const top = Math.floor(Math.random() * 70) + 10 + '%';
+      const left = Math.floor(Math.random() * 70) + 10 + '%';
+      
+      setAttentionPrompt({ show: true, top, left });
+
+      // ⏸️ CLOCK OUT
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'leave', roomId, email: currentUserEmail })
+      }).catch(() => {});
+    };
+
+    const scheduleNext = () => {
+      // 👇 NEW: Calculate the random delay using the Teacher's custom boundaries!
+      const randomDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+      timeoutId = setTimeout(triggerPrompt, randomDelay);
+    };
+
+    if (!attentionPrompt.show) {
+      scheduleNext();
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [isStudent, currentView, roomId, isViewingPast, currentUserEmail, attentionPrompt.show]);
+
+  // ⏯️ CLOCK IN: The function that runs when they click the button
+  const handleConfirmAttention = () => {
+    setAttentionPrompt({ show: false, top: '50%', left: '50%' });
+    
+    // Resume their attendance timer
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'join', roomId, email: currentUserEmail, name: userFullName })
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     if (currentView === 'board' && !isViewingPast && resumeData && excalidrawAPI) {
       setTimeout(() => {
@@ -280,7 +350,7 @@ export default function App() {
     if (isStudent || currentView !== 'board' || !roomId || isViewingPast) return;
 
     const interval = setInterval(() => {
-      fetch('${import.meta.env.VITE_BACKEND_URL}/api/attendance/live/', {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/live/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId })
@@ -302,7 +372,7 @@ export default function App() {
         const files = excalidrawAPI.getFiles();
         const boardData = JSON.stringify({ elements, files });
 
-        await fetch('${import.meta.env.VITE_BACKEND_URL}/api/end-class/', {
+        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/end-class/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomId, boardData })
@@ -330,7 +400,7 @@ export default function App() {
   const handleLogout = async () => {
     if (!isStudent && roomId) {
       try {
-        await fetch('${import.meta.env.VITE_BACKEND_URL}/api/end-class/', {
+        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/end-class/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomId })
@@ -356,20 +426,23 @@ export default function App() {
   };
 
   const handleStartClass = async (classDetails: any) => {
-    const newRoomId = `room_${classDetails.branch.replace(/\s+/g, '')}_${Date.now()}`;
+    // 👇 NEW: Append _STRICT to the room ID if the teacher enabled it
+    // 👇 NEW: Append _STRICT_minSecs_maxSecs to the room ID!
+    const strictSuffix = classDetails.isStrict ? `_STRICT_${classDetails.strictMin}_${classDetails.strictMax}` : '';
+    const newRoomId = `room_${classDetails.branch.replace(/\s+/g, '')}_${Date.now()}${strictSuffix}`;
     
     try {
-      await fetch('${import.meta.env.VITE_BACKEND_URL}/api/start-class/', {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/start-class/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           roomId: newRoomId,
           teacherName: userFullName, 
-          subjectName: classDetails.subject,
-          branchId: classDetails.branchId,
-          yearId: classDetails.yearId,
-          divId: classDetails.divId,
-          notifyType: classDetails.notifyType, 
+          subjectName: classDetails?.subject || "",
+          branchId: classDetails?.branchId || null,
+          yearId: classDetails?.yearId || null,
+          divId: classDetails?.divId || null,
+          notifyType: classDetails?.notifyType || "direct", 
         })
       });
       setIsQRMode(classDetails.notifyType === 'qr');
@@ -454,7 +527,11 @@ export default function App() {
   }, [wakeTopMenu, wakeBottomUI]);
 
   useEffect(() => {
-    const stopDrawing = () => setIsDrawingOnCanvas(false);
+    const stopDrawing = () => {
+      setIsDrawingOnCanvas(false);
+      isDrawingRef.current = false; // 🌟 Mark pen as lifted
+      flushElements(); // 🌟 BAM! Send the entire completed stroke instantly!
+    };
     window.addEventListener('pointerup', stopDrawing);
 
     const detectCollision = (e: PointerEvent) => {
@@ -597,7 +674,7 @@ export default function App() {
     if (isStudent && currentView === 'board' && roomId && !isViewingPast) {
       
       const joinTimer = setTimeout(() => {
-        fetch('${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/', {
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'join', roomId, email: currentUserEmail, name: userFullName })
@@ -607,7 +684,7 @@ export default function App() {
       return () => {
         clearTimeout(joinTimer);
         
-        fetch('${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/', {
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/attendance/mark/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           keepalive: true,
@@ -622,6 +699,50 @@ export default function App() {
     
     const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/board/${roomId}/`);
     socketRef.current = ws
+
+    // 🎥 Math function to smoothly glide from point A to point B
+    const lerp = (start: number, end: number, amt: number) => (1 - amt) * start + amt * end;
+
+    const startLerp = () => {
+      const animate = () => {
+        if (!targetCamRef.current || !currentCamRef.current || !excalidrawAPI) {
+          lerpFrameRef.current = null;
+          return;
+        }
+
+        const curr = currentCamRef.current;
+        const target = targetCamRef.current;
+
+        const dx = target.scrollX - curr.scrollX;
+        const dy = target.scrollY - curr.scrollY;
+        const dz = target.zoom - curr.zoom;
+
+        // If the camera is basically at the destination, snap it and turn off the engine
+        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(dz) < 0.005) {
+          currentCamRef.current = { ...target };
+          excalidrawAPI.updateScene({ appState: { scrollX: target.scrollX, scrollY: target.scrollY, zoom: { value: target.zoom } } });
+          lerpFrameRef.current = null;
+          return;
+        }
+
+        // Otherwise, glide 10% closer to the target every single frame!
+        currentCamRef.current = {
+          scrollX: lerp(curr.scrollX, target.scrollX, 0.1),
+          scrollY: lerp(curr.scrollY, target.scrollY, 0.1),
+          zoom: lerp(curr.zoom, target.zoom, 0.1)
+        };
+
+        excalidrawAPI.updateScene({ appState: {
+          scrollX: currentCamRef.current.scrollX,
+          scrollY: currentCamRef.current.scrollY,
+          zoom: { value: currentCamRef.current.zoom }
+        }});
+
+        // Loop the animation
+        lerpFrameRef.current = requestAnimationFrame(animate);
+      };
+      lerpFrameRef.current = requestAnimationFrame(animate);
+    };
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data)
@@ -671,32 +792,34 @@ export default function App() {
         const myHeight = myAppState.height || window.innerHeight;
 
         if (!tCam.width || !tCam.height) {
-          excalidrawAPI.updateScene({ appState: { scrollX: tCam.scrollX, scrollY: tCam.scrollY, zoom: { value: tCam.zoom } } });
-          return;
+          targetCamRef.current = { scrollX: tCam.scrollX, scrollY: tCam.scrollY, zoom: tCam.zoom };
+        } else {
+          // Do the screen-size conversion math
+          const teacherCenterX = (tCam.width / 2) / tCam.zoom - tCam.scrollX;
+          const teacherCenterY = (tCam.height / 2) / tCam.zoom - tCam.scrollY;
+          const widthRatio = myWidth / tCam.width;
+          const heightRatio = myHeight / tCam.height;
+          const scaleFactor = Math.min(1, Math.min(widthRatio, heightRatio) * 0.95); 
+          
+          const newZoom = Math.max(0.1, tCam.zoom * scaleFactor); 
+          const newScrollX = (myWidth / 2) / newZoom - teacherCenterX;
+          const newScrollY = (myHeight / 2) / newZoom - teacherCenterY;
+
+          targetCamRef.current = { scrollX: newScrollX, scrollY: newScrollY, zoom: newZoom };
         }
 
-        const teacherCenterX = (tCam.width / 2) / tCam.zoom - tCam.scrollX;
-        const teacherCenterY = (tCam.height / 2) / tCam.zoom - tCam.scrollY;
+        // 🌟 THE FIX: Always set the 'current' position to where the student ACTUALLY is right now!
+        currentCamRef.current = { 
+          scrollX: myAppState.scrollX, 
+          scrollY: myAppState.scrollY, 
+          zoom: myAppState.zoom.value 
+        };
 
-        const widthRatio = myWidth / tCam.width;
-        const heightRatio = myHeight / tCam.height;
-        const scaleFactor = Math.min(1, Math.min(widthRatio, heightRatio) * 0.95); 
+        // Start the engine if it's not already running
+        if (!lerpFrameRef.current) startLerp();
         
-        const newZoom = Math.max(0.1, tCam.zoom * scaleFactor); 
-
-        const newScrollX = (myWidth / 2) / newZoom - teacherCenterX;
-        const newScrollY = (myHeight / 2) / newZoom - teacherCenterY;
-
-        excalidrawAPI.updateScene({ 
-          appState: { 
-            scrollX: newScrollX, 
-            scrollY: newScrollY, 
-            zoom: { value: newZoom } 
-          } 
-        }); 
         return;
       }
-
       if (data.drawing_data && data.clientId !== clientIdRef.current) {
         if (data.files && Object.keys(data.files).length > 0) {
           excalidrawAPI.addFiles(Object.values(data.files));
@@ -725,12 +848,17 @@ export default function App() {
         excalidrawAPI.updateScene({ elements: trustedElements });
       }
     }
-    return () => ws.close()
+    return () => {
+      ws.close();
+      if (lerpFrameRef.current) cancelAnimationFrame(lerpFrameRef.current);
+    };
   }, [excalidrawAPI, isAuthenticated, showToast]) 
 
-  const handleExcalidrawChange = useCallback((elements: readonly any[], appState: any) => {
-    if (isStudentRef.current || socketRef.current?.readyState !== WebSocket.OPEN) return;
-    
+  //Create the "Flush" Function
+  const flushElements = useCallback(() => {
+    if (isStudentRef.current || socketRef.current?.readyState !== WebSocket.OPEN || !excalidrawAPI) return;
+
+    const elements = latestElementsRef.current;
     const elementsString = JSON.stringify(elements);
     const currentFiles = excalidrawAPI.getFiles();
     const newFilesToSend: any = {};
@@ -750,18 +878,51 @@ export default function App() {
         drawing_data: elements, files: hasNewFiles ? newFilesToSend : {}, pageId: activeSlideIdRef.current, clientId: clientIdRef.current 
       }));
     }
-
-    socketRef.current.send(JSON.stringify({ 
-      type: 'camera_sync', 
-      camera: { 
-        scrollX: appState.scrollX, 
-        scrollY: appState.scrollY, 
-        zoom: appState.zoom.value,
-        width: appState.width || window.innerWidth,
-        height: appState.height || window.innerHeight
-      } 
-    }));
   }, [excalidrawAPI]);
+
+  // ✅ FIXED: Removed the extra syntax brace that crashed the app
+  const handleExcalidrawChange = useCallback((elements: readonly any[], appState: any) => {
+    if (isStudentRef.current || socketRef.current?.readyState !== WebSocket.OPEN) return;
+
+    // 1. Always save the latest drawing data quietly in the background
+    latestElementsRef.current = elements;
+
+    // 2. CHECK CAMERA MOVEMENT
+    const newCamState = `${appState.scrollX.toFixed(1)}|${appState.scrollY.toFixed(1)}|${appState.zoom.value}`;
+
+    if (newCamState !== lastCamStateRef.current) {
+      lastCamStateRef.current = newCamState;
+      const now = Date.now();
+
+      const sendCam = () => {
+        socketRef.current.send(JSON.stringify({ 
+          type: 'camera_sync', 
+          camera: { 
+            scrollX: appState.scrollX, scrollY: appState.scrollY, zoom: appState.zoom.value,
+            width: appState.width || window.innerWidth, height: appState.height || window.innerHeight
+          } 
+        }));
+        lastCameraSyncRef.current = Date.now();
+      };
+
+      // Rule A: If they have been panning continuously for 1 full second, send an update
+      if (now - lastCameraSyncRef.current > 1000) {
+        sendCam();
+      }
+
+      // Rule B: If they stop moving for 200ms, send the final exact coordinate
+      if (camDebounceRef.current) clearTimeout(camDebounceRef.current);
+      camDebounceRef.current = setTimeout(() => {
+        sendCam();
+      }, 200);
+    }
+    
+
+    // 3. Only flush drawing data if the pen is up
+    if (!isDrawingRef.current) {
+      flushElements();
+    }
+  }, [flushElements]);
 
   const handleImport = async () => {
     if (!excalidrawAPI || !pendingPdf) return;
@@ -776,7 +937,7 @@ export default function App() {
     formData.append('end_page', pdfEnd.toString());
 
     try {
-      const response = await fetch('${import.meta.env.VITE_BACKEND_URL}/api/upload-pdf/', { method: 'POST', body: formData })
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload-pdf/`, { method: 'POST', body: formData })
       const data = await response.json()
       
       if (data.image_urls) {
@@ -898,6 +1059,37 @@ export default function App() {
         </div>
       )}
 
+      {/* 🚨 STRICT ATTENTION PROMPT OVERLAY */}
+      {attentionPrompt.show && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(239, 68, 68, 0.15)', // Very transparent red hue
+          zIndex: 9999999, // Above EVERYTHING
+          pointerEvents: 'auto', // Block drawing while active
+        }}>
+          <button
+            onClick={handleConfirmAttention}
+            style={{
+              position: 'absolute',
+              top: attentionPrompt.top,
+              left: attentionPrompt.left,
+              padding: '15px 30px',
+              background: '#ef4444',
+              color: 'white',
+              border: '2px solid white',
+              borderRadius: '12px',
+              fontSize: 'clamp(14px, 3vw, 18px)',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              boxShadow: '0 10px 40px rgba(239, 68, 68, 0.6)',
+              animation: 'pulse 1.5s infinite' // If you have a pulse class in your CSS!
+            }}
+          >
+            👀 Are you active? (Click to resume)
+          </button>
+        </div>
+      )}
+
       {currentView === 'auth' && (
         <AuthScreen onAuthSuccess={handleAuthSuccess} />
       )}
@@ -918,7 +1110,17 @@ export default function App() {
 
       {currentView === 'board' && (
         <>
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }} onPointerDown={() => setIsDrawingOnCanvas(true)} onPointerUp={handleCanvasPointerUp}> 
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }} 
+            onPointerDown={() => {
+              setIsDrawingOnCanvas(true);
+              isDrawingRef.current = true; // 🌟 Pen touches screen
+            }} 
+            onPointerUp={(e) => {
+              handleCanvasPointerUp(e);
+              isDrawingRef.current = false; // 🌟 Pen leaves screen
+              flushElements(); // 🌟 Send stroke!
+            }}
+          > 
             <Excalidraw 
               theme={theme} 
               excalidrawAPI={(api) => setExcalidrawAPI(api)} 

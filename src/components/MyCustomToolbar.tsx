@@ -7,7 +7,6 @@ interface MyCustomToolbarProps {
 }
 
 export default function MyCustomToolbar({ excalidrawAPI, onToolSelect, theme }: MyCustomToolbarProps) {
-  
   const appState = excalidrawAPI?.getAppState() || {};
   const [activeColor, setActiveColor] = useState(appState.currentItemStrokeColor || '#000000'); 
   const [activeTool, setActiveTool] = useState(appState.activeTool?.type || 'freedraw');  
@@ -36,15 +35,13 @@ export default function MyCustomToolbar({ excalidrawAPI, onToolSelect, theme }: 
     excalidrawAPI?.updateScene({ appState: { currentItemStrokeStyle: style } });
   };
 
-  // 🎨 THE FIX: We MUST always pass Excalidraw's default hex codes under the hood...
-  const presetColors = ['#000000', '#ffffff', '#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5', '#1e293b'];
+  const presetColors = ['#000000', '#ffffff', '#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#1e293b'];
 
-  // ...But we dynamically change what the Swatch LOOKS like in the UI to match Excalidraw's canvas inversion!
   const getDisplayColor = (color: string) => {
     if (theme === 'dark') {
-      if (color === '#000000') return '#ffffff'; // Excalidraw draws #000000 as White in dark mode
-      if (color === '#ffffff') return '#232329'; // Excalidraw draws #ffffff as Dark Gray in dark mode
-      if (color === '#1e293b') return '#868e96'; // Lighten the dark blue so it's visible
+      if (color === '#000000') return '#ffffff'; 
+      if (color === '#ffffff') return '#232329'; 
+      if (color === '#1e293b') return '#94a3b8'; 
     }
     return color;
   };
