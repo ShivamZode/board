@@ -25,7 +25,7 @@ const modalTitleStyle: CSSProperties = { margin: 0, fontSize: 'clamp(18px, 4vw, 
 const historyCardStyle: CSSProperties = { display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '15px', borderRadius: '16px', borderLeft: '5px solid #3b82f6', borderTop: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', gap: '10px' };
 
 const inputStyle: CSSProperties = { padding: '12px 15px', borderRadius: '12px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box', color: '#0f172a', fontSize: '15px', height: '48px', appearance: 'none', backgroundColor: '#f8fafc' };
-const timeInputStyle: CSSProperties = { width: '55px', height: '40px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '15px', backgroundColor: '#f8fafc' };
+const timeInputStyle: CSSProperties = { width: '55px', height: '40px', padding: '0 10px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '15px', backgroundColor: '#f8fafc', color: '#0f172a' };
 
 const logoutBtnStyle: CSSProperties = { background: '#fee2e2', color: '#dc2626', padding: '10px 16px', border: '1px solid #fecaca', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s' };
 const closeBtnStyle: CSSProperties = { background: '#f1f5f9', color: '#64748b', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' };
